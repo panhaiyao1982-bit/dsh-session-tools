@@ -1,6 +1,6 @@
 {
   "name": "dsh-session-tools",
-  "version": "0.1.6",
+  "version": "0.1.7",
   "description": "Lock, bin and relocate Sessions from the sidebar, with the files they produced.",
   "license": "MIT",
   "author": {

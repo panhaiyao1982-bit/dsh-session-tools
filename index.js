@@ -42,7 +42,7 @@ const ROUTE = '/api/session-tools'
  * plugin state so a support question ("is the running copy the one I installed?")
  * has an answer on disk instead of a guess.
  */
-const BUILD = '0.1.6+2026-11-08T13:42'
+const BUILD = '0.1.7+2026-11-08T15:30'
 const LOG_PREFIX = 'session.'
 const LOG_SUFFIX = '.jsonl.zstd'
 const SESSION_FORMAT_VERSION = 4
@@ -500,13 +500,58 @@ function writtenPaths(events, baseCwd) {
 }
 
 /**
+ * Normalize one path for comparison only.
+ *
+ * Windows paths are case-insensitive, and the same directory can reach the plugin
+ * spelled two ways (`C:\Users\…` from a tool argument, `c:/users/…` from a stored
+ * header). Comparing the raw strings would then miss files that are really inside
+ * the workspace, so the comparison happens on a normalized spelling. POSIX keeps
+ * its case, where it is significant.
+ *
+ * @param path - Absolute path.
+ * @returns the spelling used for comparisons.
+ */
+function compareKey(path) {
+	const normalized = path.replace(/\\/g, '/')
+	return process.platform === 'win32' ? normalized.toLowerCase() : normalized
+}
+
+/**
  * Whether one absolute path sits inside a directory.
  * @param child - Candidate file path.
  * @param parent - Candidate directory path.
  * @returns true when `child` is inside `parent` and is not `parent` itself.
  */
 function isInside(child, parent) {
-	return child !== parent && child.startsWith(parent.endsWith(sep) ? parent : parent + sep)
+	const from = compareKey(child)
+	const to = compareKey(parent)
+	if (from === to) return false
+	return from.startsWith(to.endsWith('/') ? to : `${to}/`)
+}
+
+/**
+ * Express one path relative to another with forward slashes.
+ *
+ * The relative path is stored in the recycle-bin manifest, and a manifest written
+ * on one platform has to be readable on another: `sub\file.txt` is a legal file
+ * name on POSIX but a separator on Windows. Forward slashes are the one spelling
+ * both platforms accept.
+ *
+ * @param from - Directory the path is relative to.
+ * @param to - Absolute path.
+ * @returns the relative path, using forward slashes.
+ */
+function portableRelative(from, to) {
+	return relative(from, to).split(sep).join('/')
+}
+
+/**
+ * Turn a stored relative path back into one this platform can use.
+ * @param rel - Relative path with forward slashes.
+ * @returns the same path with this platform's separators.
+ */
+function nativePath(rel) {
+	return rel.split('/').join(sep)
 }
 
 /**
@@ -549,7 +594,7 @@ async function describeFiles(paths, cwd) {
 			continue
 		}
 		if (!stat.isFile()) continue
-		files.push({ path, rel: relative(cwd, path), bytes: stat.size })
+		files.push({ path, rel: portableRelative(cwd, path), bytes: stat.size })
 	}
 	return files
 }
@@ -1023,7 +1068,7 @@ function createTools(ctx) {
 		try {
 			if (dir !== undefined) await movePath(dir, join(binDir, 'session'))
 			for (const file of files) {
-				const destination = join(binDir, 'files', file.rel)
+				const destination = join(binDir, 'files', nativePath(file.rel))
 				await fs.mkdir(dirname(destination), { recursive: true })
 				await movePath(file.path, destination)
 				movedFiles.push({ rel: file.rel, original: file.path, bytes: file.bytes })
@@ -1031,7 +1076,7 @@ function createTools(ctx) {
 		} catch (error) {
 			// Put back whatever already travelled, then report: a half-binned Session is not acceptable.
 			if (dir !== undefined && existsSync(join(binDir, 'session'))) await movePath(join(binDir, 'session'), dir).catch(() => undefined)
-			for (const file of movedFiles) await movePath(join(binDir, 'files', file.rel), file.original).catch(() => undefined)
+			for (const file of movedFiles) await movePath(join(binDir, 'files', nativePath(file.rel)), file.original).catch(() => undefined)
 			await fs.rm(binDir, { recursive: true, force: true }).catch(() => undefined)
 			throw error
 		}
@@ -1084,7 +1129,7 @@ function createTools(ctx) {
 			await movePath(join(base, 'trash', entryId, 'session'), target)
 		}
 		for (const file of entry.files ?? []) {
-			const source = join(base, 'trash', entryId, 'files', file.rel)
+			const source = join(base, 'trash', entryId, 'files', nativePath(file.rel))
 			if (!existsSync(source)) continue
 			await fs.mkdir(dirname(file.original), { recursive: true })
 			if (existsSync(file.original)) continue
@@ -1177,16 +1222,16 @@ function createTools(ctx) {
 			if (directionMoved) await movePath(targetDir, inspection.dir).catch(() => undefined)
 			if (headerRewritten) await rewriteHeaderCwd(join(inspection.dir, basename(inspection.logFile)), fromCwd).catch(() => undefined)
 			for (const rel of movedFiles) {
-				const parked = join(target.path, rel)
+				const parked = join(target.path, nativePath(rel))
 				if (!existsSync(parked)) continue
 				await fs.mkdir(dirname(join(fromCwd, rel)), { recursive: true }).catch(() => undefined)
-				await movePath(parked, join(fromCwd, rel)).catch(() => undefined)
+				await movePath(parked, join(fromCwd, nativePath(rel))).catch(() => undefined)
 			}
 		}
 
 		try {
 			for (const file of withFiles === true ? inspection.files : []) {
-				const destination = join(target.path, file.rel)
+				const destination = join(target.path, nativePath(file.rel))
 				if (existsSync(destination)) {
 					skipped.push(file.rel)
 					continue

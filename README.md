@@ -1,5 +1,7 @@
 # dsh-session-tools
 
+English | [中文](README.zh.md)
+
 Session management for the [DeepSeek Harness](https://github.com/deepseek-ai/deepseek-harness) sidebar.
 Lock a conversation, send it to a recycle bin with or without the files it wrote, handle Sessions in
 bulk per workspace, or move one — files included — into another workspace.
@@ -96,10 +98,26 @@ dsh plugin add github:panhaiyao1982-bit/dsh-session-tools
 
 Restart the app once after installing; the sidebar foot then shows **Manage** and **Recycle bin**.
 
+## Platforms
+
+macOS, Linux and Windows all work; the plugin contains no platform branch.
+
+Three things that usually break across platforms are handled here:
+
+| Concern | How |
+|---|---|
+| The Session directory's path encoding | Byte-for-byte equivalent to DSH's own JSONL store (`projectKey` / `encodeSegment`): Windows drive letters (`C:`), backslashes, non-ASCII paths and over-long paths all agree — checked with a differential test against the real build |
+| Path comparison | Windows paths are case-insensitive, so comparisons normalize case and separators; POSIX keeps its case, where it is significant |
+| Relative paths in the bin manifest | Always stored with forward slashes — `\` is a legal file name on POSIX but a separator on Windows, and pinning one spelling breaks the other |
+
+A move across drives (Windows `C:` → `D:`) uses `fs.rename` and falls back to copy-then-delete when the devices differ.
+
+`node:zlib`'s zstd ships with Node 22.15+ / 24 on every platform; without it the move says so instead of failing quietly.
+
 ## Compatibility
 
-Requires DSH `>=0.2.2-rc.1 <0.3.0-0` and Node `>=22.15` (moving a Session rewrites a zstd frame with
-`node:zlib`).
+
+Requires DSH `>=0.2.2-rc.1 <0.3.0-0` and Node `>=22.15`.
 
 Moving a Session relies on the Workspace registry's durable account table and its canonical-path
 index (`@deepseek-ai/dsh-workspace`). Those are stable enough to have survived this release line but
