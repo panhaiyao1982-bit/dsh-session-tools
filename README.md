@@ -6,6 +6,32 @@ bulk per workspace, or move one — files included — into another workspace.
 
 Everything except the explicitly chosen direct delete is reversible from the recycle bin.
 
+## Screenshots
+
+### The Session row menu, and the lock mark on a protected row
+
+![Session row menu and lock badge](docs/session-tools-01.png)
+
+### Delete asks which way you want it to go
+
+![Delete dialog with two exits](docs/session-tools-02.png)
+
+### The recycle bin
+
+![Recycle bin panel](docs/session-tools-03.png)
+
+### Moving a Session, and its files, to another workspace
+
+![Move dialog](docs/session-tools-04.png)
+
+### Bulk management, grouped by workspace
+
+![Bulk management panel](docs/session-tools-05.png)
+
+### Dark theme
+
+![Dark theme](docs/session-tools-06.png)
+
 ## What it adds
 
 | Where | What |
