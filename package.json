@@ -1,0 +1,61 @@
+{
+  "name": "dsh-session-tools",
+  "version": "0.1.6",
+  "description": "Lock, bin and relocate Sessions from the sidebar, with the files they produced.",
+  "license": "MIT",
+  "author": {
+    "name": "panhaiyao1982-bit",
+    "email": "panhaiyao1982@gmail.com"
+  },
+  "homepage": "https://github.com/panhaiyao1982-bit/dsh-session-tools",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/panhaiyao1982-bit/dsh-session-tools.git"
+  },
+  "bugs": {
+    "url": "https://github.com/panhaiyao1982-bit/dsh-session-tools/issues"
+  },
+  "keywords": [
+    "dsh-plugin",
+    "deepseek-harness",
+    "dsh",
+    "session",
+    "session-management",
+    "recycle-bin"
+  ],
+  "type": "module",
+  "main": "index.js",
+  "exports": {
+    ".": "./index.js",
+    "./client": "./client.js",
+    "./locale/*.json": "./locale/*.json",
+    "./icon": "./icon.svg"
+  },
+  "files": [
+    "index.js",
+    "client.js",
+    "cordis.patch.yml",
+    "locale/*.json",
+    "icon.svg",
+    "README.md",
+    "README.zh.md"
+  ],
+  "engines": {
+    "node": ">=22.15",
+    "dsh": ">=0.2.2-rc.1 <0.3.0-0"
+  },
+  "peerDependencies": {
+    "@deepseek-ai/cordis": "^4.0.1"
+  },
+  "dsh": {
+    "bundle": {
+      "patch": "./cordis.patch.yml"
+    },
+    "client": {
+      "platform": "web",
+      "inject": [
+        "@deepseek-ai/dsh-client-locale"
+      ]
+    }
+  }
+}

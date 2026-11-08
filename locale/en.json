@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Session tools",
+    "description": "Lock a Session, bin it with or without the files it produced, and move it — files included — into another workspace. Every delete is reversible from the recycle bin."
+  }
+}
